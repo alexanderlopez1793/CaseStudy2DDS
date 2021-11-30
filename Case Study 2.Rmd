@@ -1,0 +1,40 @@
+---
+title: "Case Study 2"
+author: "Alex Lopez"
+date: "11/29/2021"
+output: html_document
+---
+
+# Introduction:
+In this presentation, we will be ...
+
+### Package Load-In
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+library(tidyverse)
+library(readr)
+library(ggplot2)
+library(caret)
+library(e1071)
+library(fpp)
+```
+
+### Data Load-In
+```{r}
+# Load original dataset.
+orig_data <- as.data.frame(read_csv(url("https://raw.githubusercontent.com/alexanderlopez1793/CaseStudy2DDS/main/CaseStudy2-data.csv?token=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")))
+```
+
+### Identify Top 3 Factors for Attrition
+```{r}
+# review dataset
+str(orig_data)
+summary(orig_data)
+
+# checking for missing values not captured in summary()
+sum(is.null(orig_data))
+
+
+```
+
