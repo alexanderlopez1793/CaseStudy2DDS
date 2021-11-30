@@ -14,10 +14,12 @@ knitr::opts_chunk$set(echo = TRUE)
 rm(list = ls())
 library(tidyverse)
 library(readr)
+library(corrplot)
 library(ggplot2)
 library(caret)
 library(e1071)
 library(fpp)
+library(GGally)
 ```
 
 ### Data Load-In
@@ -26,9 +28,9 @@ library(fpp)
 orig_data <- as.data.frame(read_csv(url("https://raw.githubusercontent.com/alexanderlopez1793/CaseStudy2DDS/main/CaseStudy2-data.csv")))
 ```
 
-### Identify Top 3 Factors for Attrition
+### Data Pre-Processing
 ```{r}
-# review dataset
+# review data set
 str(orig_data)
 summary(orig_data)
 
@@ -37,6 +39,84 @@ sum(is.null(orig_data))
 
 # convert Attrition to factor for comparison
 orig_data$Attrition = as.factor(orig_data$Attrition)
-str(orig_data$Attrition)
+
+# convert chr variables to factors since none have high value count
+
+orig_data$BusinessTravel = as.factor(orig_data$BusinessTravel)
+
+orig_data$Department = as.factor(orig_data$Department)
+
+orig_data$EducationField = as.factor(orig_data$EducationField)
+
+orig_data$Gender = as.factor(orig_data$Gender)
+
+orig_data$JobRole = as.factor(orig_data$JobRole)
+
+# may group single and divorced together
+orig_data$MaritalStatus = as.factor(orig_data$MaritalStatus)
+
+orig_data$OverTime = as.factor(orig_data$OverTime)
+
+# dropping variables with no beneficial info
+
+# no value in employee ID #
+mod_data = subset(orig_data, select = -c(ID))
+
+# Employee # also has no value
+mod_data = subset(mod_data, select = -c(EmployeeNumber))
+
+# count is the same for every employee
+mod_data = subset(mod_data, select = -c(EmployeeCount))
+
+# standard hours the same for all employee
+mod_data = subset(mod_data, select = -c(StandardHours))
+
+# all employees over 18, will be dropped
+mod_data = subset(mod_data, select = -c(Over18) )
+
 ```
 
+### EDA - Univariate Categorical
+```{r}
+
+# review Categorical variables
+mod_data %>% ggplot(aes(x=Attrition)) + geom_bar(fill = "blue",col = "black") + labs(title="Attrition Bar Plot")
+mod_data %>% ggplot(aes(x=BusinessTravel)) + geom_bar(fill = "blue",col = "black") + labs(title="Business Travel Bar Plot")
+mod_data %>% ggplot(aes(x=Department)) + geom_bar(fill = "blue",col = "black") + labs(title="Department Bar Plot")
+mod_data %>% ggplot(aes(x=EducationField)) + geom_bar(fill = "blue",col = "black") + labs(title="Education Field Bar Plot") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+mod_data %>% ggplot(aes(x=Gender)) + geom_bar(fill = "blue",col = "black") + labs(title="Gender Bar Plot")
+mod_data %>% ggplot(aes(x=JobRole)) + geom_bar(fill = "blue",col = "black") + labs(title="Job Role Bar Plot")
+mod_data %>% ggplot(aes(x=MaritalStatus)) + geom_bar(fill = "blue",col = "black") + labs(title="Marital Status Bar Plot")
+mod_data %>% ggplot(aes(x=OverTime)) + geom_bar(fill = "blue",col = "black") + labs(title="Overtime Bar Plot")
+```
+Insights:
+
+
+### EDA - Univariate Numerical
+```{r}
+# review Numeric variables
+mod_data %>% ggplot(aes(x=Age)) + geom_histogram(binwidth=5,fill = "blue",col = "black")+ labs(title="Age Histogram Plot")
+mod_data %>% ggplot(aes(x=DailyRate)) + geom_histogram(binwidth=100,fill = "blue",col = "black")+ labs(title="Daily Rate Histogram Plot")
+mod_data %>% ggplot(aes(x=DistanceFromHome)) + geom_histogram(binwidth=2,fill = "blue",col = "black")+ labs(title="Distance From Home Histogram Plot")
+mod_data %>% ggplot(aes(x=Education)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Education Histogram Plot")
+mod_data %>% ggplot(aes(x=EnvironmentSatisfaction)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Environment Satisfaction Histogram Plot")
+mod_data %>% ggplot(aes(x=HourlyRate)) + geom_histogram(binwidth=5,fill = "blue",col = "black")+ labs(title="Hourly Rate Histogram Plot")
+mod_data %>% ggplot(aes(x=JobInvolvement)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Job Involvement Histogram Plot")
+mod_data %>% ggplot(aes(x=JobLevel)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Job Level Histogram Plot")
+mod_data %>% ggplot(aes(x=JobSatisfaction)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Job Satisfaction Histogram Plot")
+mod_data %>% ggplot(aes(x=MonthlyIncome)) + geom_histogram(binwidth=1000,fill = "blue",col = "black")+ labs(title="Monthly Income Histogram Plot")
+mod_data %>% ggplot(aes(x=MonthlyRate)) + geom_histogram(binwidth=1000,fill = "blue",col = "black")+ labs(title="Monthly Rate Histogram Plot")
+mod_data %>% ggplot(aes(x=NumCompaniesWorked)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Number of Companies Worked Histogram Plot")
+mod_data %>% ggplot(aes(x=PercentSalaryHike)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Percent Salary Hike Histogram Plot")
+mod_data %>% ggplot(aes(x=PerformanceRating)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Performance Rating Histogram Plot")
+mod_data %>% ggplot(aes(x=RelationshipSatisfaction)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Relationship Satisfaction Histogram Plot")
+mod_data %>% ggplot(aes(x=StockOptionLevel)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Stock Option Level Histogram Plot")
+mod_data %>% ggplot(aes(x=TotalWorkingYears)) + geom_histogram(binwidth=2,fill = "blue",col = "black")+ labs(title="Total Working Years Histogram Plot")
+mod_data %>% ggplot(aes(x=TrainingTimesLastYear)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Training Time Last Year Histogram Plot")
+mod_data %>% ggplot(aes(x=WorkLifeBalance)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Work/Life Balance Histogram Plot")
+mod_data %>% ggplot(aes(x=YearsAtCompany)) + geom_histogram(binwidth=2,fill = "blue",col = "black")+ labs(title="Years at Company Histogram Plot")
+mod_data %>% ggplot(aes(x=YearsInCurrentRole)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Years in Current Role Histogram Plot")
+mod_data %>% ggplot(aes(x=YearsSinceLastPromotion)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Years Since Last Promotion Histogram Plot")
+mod_data %>% ggplot(aes(x=YearsWithCurrManager)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Years With Current Manager Histogram Plot")
+```
+Insights: 
