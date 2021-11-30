@@ -23,7 +23,7 @@ library(fpp)
 ### Data Load-In
 ```{r}
 # Load original dataset.
-orig_data <- as.data.frame(read_csv(url("https://raw.githubusercontent.com/alexanderlopez1793/CaseStudy2DDS/main/CaseStudy2-data.csv?token=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")))
+orig_data <- as.data.frame(read_csv(url("https://raw.githubusercontent.com/alexanderlopez1793/CaseStudy2DDS/main/CaseStudy2-data.csv")))
 ```
 
 ### Identify Top 3 Factors for Attrition
@@ -35,6 +35,8 @@ summary(orig_data)
 # checking for missing values not captured in summary()
 sum(is.null(orig_data))
 
-
+# convert Attrition to factor for comparison
+orig_data$Attrition = as.factor(orig_data$Attrition)
+str(orig_data$Attrition)
 ```
 
