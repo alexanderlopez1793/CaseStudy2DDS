@@ -3,14 +3,16 @@ title: "Case Study 2"
 author: "Alex Lopez"
 date: "11/29/2021"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 # Introduction:
 In this presentation, we will be ...
 
-### Package Load-In
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# Package Load-In
 rm(list = ls())
 library(tidyverse)
 library(readr)
@@ -20,6 +22,8 @@ library(caret)
 library(e1071)
 library(fpp)
 library(GGally)
+library(lsr)
+library(ggcorrplot)
 ```
 
 ### Data Load-In
@@ -33,64 +37,56 @@ orig_data <- as.data.frame(read_csv(url("https://raw.githubusercontent.com/alexa
 # review data set
 str(orig_data)
 summary(orig_data)
-
 # checking for missing values not captured in summary()
 sum(is.null(orig_data))
-
 # convert Attrition to factor for comparison
 orig_data$Attrition = as.factor(orig_data$Attrition)
-
 # convert chr variables to factors since none have high value count
-
 orig_data$BusinessTravel = as.factor(orig_data$BusinessTravel)
-
 orig_data$Department = as.factor(orig_data$Department)
-
 orig_data$EducationField = as.factor(orig_data$EducationField)
-
 orig_data$Gender = as.factor(orig_data$Gender)
-
 orig_data$JobRole = as.factor(orig_data$JobRole)
-
 # may group single and divorced together
 orig_data$MaritalStatus = as.factor(orig_data$MaritalStatus)
-
 orig_data$OverTime = as.factor(orig_data$OverTime)
-
 # dropping variables with no beneficial info
-
 # no value in employee ID #
 mod_data = subset(orig_data, select = -c(ID))
-
 # Employee # also has no value
 mod_data = subset(mod_data, select = -c(EmployeeNumber))
-
 # count is the same for every employee
 mod_data = subset(mod_data, select = -c(EmployeeCount))
-
 # standard hours the same for all employee
 mod_data = subset(mod_data, select = -c(StandardHours))
-
 # all employees over 18, will be dropped
 mod_data = subset(mod_data, select = -c(Over18) )
-
 ```
 
-### EDA - Univariate Categorical
+### EDA - Univariate Factor
 ```{r}
 
 # review Categorical variables
-mod_data %>% ggplot(aes(x=Attrition)) + geom_bar(fill = "blue",col = "black") + labs(title="Attrition Bar Plot")
-mod_data %>% ggplot(aes(x=BusinessTravel)) + geom_bar(fill = "blue",col = "black") + labs(title="Business Travel Bar Plot")
-mod_data %>% ggplot(aes(x=Department)) + geom_bar(fill = "blue",col = "black") + labs(title="Department Bar Plot")
-mod_data %>% ggplot(aes(x=EducationField)) + geom_bar(fill = "blue",col = "black") + labs(title="Education Field Bar Plot") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-mod_data %>% ggplot(aes(x=Gender)) + geom_bar(fill = "blue",col = "black") + labs(title="Gender Bar Plot")
-mod_data %>% ggplot(aes(x=JobRole)) + geom_bar(fill = "blue",col = "black") + labs(title="Job Role Bar Plot")
-mod_data %>% ggplot(aes(x=MaritalStatus)) + geom_bar(fill = "blue",col = "black") + labs(title="Marital Status Bar Plot")
-mod_data %>% ggplot(aes(x=OverTime)) + geom_bar(fill = "blue",col = "black") + labs(title="Overtime Bar Plot")
+mod_data %>% ggplot(aes(x=Attrition)) + geom_bar(fill = "blue",col = "black") + labs(title="Attrition Bar Plot")  + geom_text(stat='count', aes(label=..count..), vjust=-.2)
+mod_data %>% ggplot(aes(x=BusinessTravel)) + geom_bar(fill = "blue",col = "black") + labs(title="Business Travel Bar Plot")+ geom_text(stat='count', aes(label=..count..), vjust=-.2)
+mod_data %>% ggplot(aes(x=Department)) + geom_bar(fill = "blue",col = "black") + labs(title="Department Bar Plot")+ geom_text(stat='count', aes(label=..count..), vjust=-.2)
+mod_data %>% ggplot(aes(x=EducationField)) + geom_bar(fill = "blue",col = "black") + labs(title="Education Field Bar Plot") + theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust=1))+ geom_text(stat='count', aes(label=..count..), vjust=-.2)
+mod_data %>% ggplot(aes(x=Gender)) + geom_bar(fill = "blue",col = "black") + labs(title="Gender Bar Plot")+ geom_text(stat='count', aes(label=..count..), vjust=-.2)
+mod_data %>% ggplot(aes(x=JobRole)) + geom_bar(fill = "blue",col = "black") + labs(title="Job Role Bar Plot")+ theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust=1))+ geom_text(stat='count', aes(label=..count..), vjust=-.2)
+mod_data %>% ggplot(aes(x=MaritalStatus)) + geom_bar(fill = "blue",col = "black") + labs(title="Marital Status Bar Plot")+ geom_text(stat='count', aes(label=..count..), vjust=-.2)
+mod_data %>% ggplot(aes(x=OverTime)) + geom_bar(fill = "blue",col = "black") + labs(title="Overtime Bar Plot")+ geom_text(stat='count', aes(label=..count..), vjust=-.2)
 ```
-Insights:
 
+Insights: 
+
+- Attrition: Data is somewhat biased with a majority (84%) of employees showing "No" to Attrition (turnover).
+- Business Travel: Most employees (71%) rarely travel.
+- Department: Almost 2/3 (65%) of employees work in "Research & Development".
+- Education Field: Employees with "Life Sciences" and "Medical" education backgrounds make up almost 3/4 of data (72%).
+- Gender: Employees are 59% male.
+- Job Role: 60% of employees work as "Sales Executive", "Research Scientist", or "Laboratory Technician".
+- Marital Status: There is almost a 50/50 split between "Married" and "Single"/"Divorced" employees ("Divorced" employees can be considered single as well).
+- Overtime: 71% of employees do not work overtime.
 
 ### EDA - Univariate Numerical
 ```{r}
@@ -119,4 +115,200 @@ mod_data %>% ggplot(aes(x=YearsInCurrentRole)) + geom_histogram(binwidth=1,fill 
 mod_data %>% ggplot(aes(x=YearsSinceLastPromotion)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Years Since Last Promotion Histogram Plot")
 mod_data %>% ggplot(aes(x=YearsWithCurrManager)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Years With Current Manager Histogram Plot")
 ```
+
 Insights: 
+
+- Age: Employee age has approx. normally distribution.
+- Hourly/Daily/Monthly Rate: There is no obvious statistical distribution.
+- Distance From Home: There is a right skew with a large amount of employees living very close to work.
+- Education: There is a some-what normal distribution around mid-level education (assumption is 5 is the highest level of education i.e. PHD, and 1 is equal to little or no post high school education).
+- Environment Satisfaction: A majority of employees have high work satisfaction (3 or 4 rating).
+- Job Involvement: Most employees have mid-range job involvement (assumption is 1 is low involvement and 4 is high involvement).
+- Job Level: There is a right skew with a majority of employees having lower level jobs.
+- Job Satisfaction: A majority of employees have high levels of job satisfaction.
+- Monthly Income: There is a right skew with, what seems to be, positive outliers (high wages).
+- Number of Companies Worked: There is a right skew, with a large number of employees having only worked 1 other job.
+- Percent Salary Hike: There is a right skew, with a majority of employees recieving low salary percentage increases.
+- Performance Rating: Scale is likely from 1-5, meaning all employees show to have mid to mid-high ratings.
+- Relationship Satisfaction: A majority of employees have high relationship satisfaction with there supervisor/manager (assumption is 1 is low satisfaction and 4 is high satisfaction).
+- Stock Option: Most employees have low level stock option plan, likely correlating to high number of employees with lower Job Level.
+- Total Working Years: There is a right skew, with positive outliers appearing to be present.
+- Training Total Last Year: Most employees only trained 2-3 times last year.
+- Work/Life Balance: A majority of employees show to have a good level of work/life balance (assumption 1 is bad work/life balance and 4 is good work/life balance).
+- Years at Company: There is right skew, likely correlates to number of total years worked.
+- Years in Current Role: Some what right skew, could also be bi-modal around 2 years and 7 years.
+- Years Since Last Promotion: There is a right skew, may have strong correlation to years in current role.
+- Years With Current Manager: Some what right skew, could also be bi-modal. Distribution looks very similar to years in current role.
+
+### EDA - Bivariate Factor
+```{r}
+#business travel
+mod_data %>%
+  group_by(BusinessTravel) %>%
+  summarise(attrition_rate = round((sum(if_else(Attrition == "Yes",1,0))/n()*100),2)) %>%
+  ggplot(aes(x = BusinessTravel, y = attrition_rate))+ geom_bar(stat = 'identity',fill = "blue") + ggtitle("Attrition Rate - Business Travel") + theme(plot.title = element_text(size =20),axis.text.x = element_text(size =10)) + geom_text(aes(label=attrition_rate), size = 10, position=position_dodge(width=0.2), vjust=-0.25)+ scale_y_continuous(limits = c(0, 30))
+# department
+mod_data %>%
+  group_by(Department) %>%
+  summarise(attrition_rate = round((sum(if_else(Attrition == "Yes",1,0))/n()*100),2)) %>%
+  ggplot(aes(x = Department, y = attrition_rate))+ geom_bar(stat = 'identity',fill = "blue") + ggtitle("Attrition Rate - Department") + theme(plot.title = element_text(size =20),axis.text.x = element_text(size =10)) + geom_text(aes(label=attrition_rate), size = 10, position=position_dodge(width=0.2), vjust=-0.25)+ scale_y_continuous(limits = c(0, 30))
+# education field
+mod_data %>%
+  group_by(EducationField) %>%
+  summarise(attrition_rate = round((sum(if_else(Attrition == "Yes",1,0))/n()*100),2)) %>%
+  ggplot(aes(x = EducationField, y = attrition_rate))+ geom_bar(stat = 'identity',fill = "blue") + ggtitle("Attrition Rate - Education Field") + theme(plot.title = element_text(size =20),axis.text.x = element_text(size =10, angle = 60,hjust = 1)) + geom_text(aes(label=attrition_rate), size = 5, position=position_dodge(width=0.2), vjust=-0.25)+ scale_y_continuous(limits = c(0, 30))
+# gender
+mod_data %>%
+  group_by(Gender) %>%
+  summarise(attrition_rate = round((sum(if_else(Attrition == "Yes",1,0))/n()*100),2)) %>%
+  ggplot(aes(x = Gender, y = attrition_rate))+ geom_bar(stat = 'identity',fill = "blue") + ggtitle("Attrition Rate - Gender") + theme(plot.title = element_text(size =20),axis.text.x = element_text(size =10)) + geom_text(aes(label=attrition_rate), size = 10, position=position_dodge(width=0.2), vjust=-0.25)+ scale_y_continuous(limits = c(0, 20))
+# Job Role
+mod_data %>%
+  group_by(JobRole) %>%
+  summarise(attrition_rate = round((sum(if_else(Attrition == "Yes",1,0))/n()*100),2)) %>%
+  ggplot(aes(x = JobRole, y = attrition_rate))+ geom_bar(stat = 'identity',fill = "blue") + ggtitle("Attrition Rate - JobRole") + theme(plot.title = element_text(size =15),axis.text.x = element_text(size =9, angle = 60,hjust = 1)) + geom_text(aes(label=attrition_rate), size = 5, position=position_dodge(width=0.2), vjust=-0.25)+ scale_y_continuous(limits = c(0, 50))
+# Marital Status
+mod_data %>%
+  group_by(MaritalStatus) %>%
+  summarise(attrition_rate = round((sum(if_else(Attrition == "Yes",1,0))/n()*100),2)) %>%
+  ggplot(aes(x = MaritalStatus, y = attrition_rate))+ geom_bar(stat = 'identity',fill = "blue") + ggtitle("Attrition Rate - MaritalStatus") + theme(plot.title = element_text(size =15),axis.text.x = element_text(size =10)) + geom_text(aes(label=attrition_rate), size = 5, position=position_dodge(width=0.2), vjust=-0.25)+ scale_y_continuous(limits = c(0, 50))
+# Overtime
+mod_data %>%
+  group_by(OverTime) %>%
+  summarise(attrition_rate = round((sum(if_else(Attrition == "Yes",1,0))/n()*100),2)) %>%
+  ggplot(aes(x = OverTime, y = attrition_rate))+ geom_bar(stat = 'identity',fill = "blue") + ggtitle("Attrition Rate - OverTime") + theme(plot.title = element_text(size =15),axis.text.x = element_text(size =10)) + geom_text(aes(label=attrition_rate), size = 5, position=position_dodge(width=0.2), vjust=-0.25)+ scale_y_continuous(limits = c(0, 50))
+```
+
+Insights:
+
+- Business Travel: Highest rate of Attrition is for employees who travel often.
+- Department: Highest rate of Attrition is for employees who work in sales.
+- Education Field: Attrition rates are highest amoungst Human Resources and Technical Degrees.
+- Gender: Attrition rate is only just larger for males.
+- Job Role: Attrition rate is almost half for Sales Rep's. Also, Attrition for Human Resources, Lab Tech, and Research Scientist is around 20%.
+- Marital Status: Attrition rate is over 25% for single employees.
+- Overtime: Attrition rate for employees that work overtime is over 30%.
+
+### EDA - Bivariate Numeric
+```{r}
+# Age
+mod_data %>%
+  ggplot(aes(x = Age, fill = Attrition)) + geom_boxplot() + ggtitle("Age by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Hourly rate
+mod_data %>%
+  ggplot(aes(x = HourlyRate, fill = Attrition)) + geom_density(alpha = .5) + ggtitle("Hourly Rate by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Daily rate
+mod_data %>%
+  ggplot(aes(x = DailyRate, fill = Attrition)) + geom_density(alpha = .5) + ggtitle("Daily Rate by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Monthly rate
+mod_data %>%
+  ggplot(aes(x = MonthlyRate, fill = Attrition)) + geom_density(alpha = .5) + ggtitle("Monthly Rate by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Distance From Home
+mod_data %>%
+  ggplot(aes(x = DistanceFromHome, fill = Attrition)) + geom_density(alpha = .5) + ggtitle("Distance From Home by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Education
+mod_data %>%
+  ggplot(aes(x = Education, fill = Attrition)) + geom_bar() + ggtitle("Education by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Environment Satisfaction
+mod_data %>%
+  ggplot(aes(x = EnvironmentSatisfaction, fill = Attrition)) +  geom_bar() + ggtitle("Environment Satisfaction by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Job Involvement
+mod_data %>%
+  ggplot(aes(x = JobInvolvement, fill = Attrition)) +  geom_bar() + ggtitle("Job Involvement by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Job Level
+mod_data %>%
+  ggplot(aes(x = JobLevel, fill = Attrition)) +  geom_bar() + ggtitle("Job Level by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Job Satisfaction
+mod_data %>%
+  ggplot(aes(x = JobSatisfaction, fill = Attrition)) +  geom_bar() + ggtitle("Job Satisfaction by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Monthly Income
+mod_data %>%
+  ggplot(aes(x = MonthlyIncome, fill = Attrition)) +  geom_boxplot() + ggtitle("Monthly Income by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Number of Companies Worked
+mod_data %>%
+  ggplot(aes(x = NumCompaniesWorked, fill = Attrition)) +  geom_bar() + ggtitle("Number of Companies Worked by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Percent Salary Hike
+mod_data %>%
+  ggplot(aes(x = PercentSalaryHike, fill = Attrition)) +  geom_bar() + ggtitle("Percent Salary Hike by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Performance Rating
+mod_data %>%
+  ggplot(aes(x = PerformanceRating, fill = Attrition)) +  geom_bar() + ggtitle("Performance Rating by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Relationship Satisfaction
+mod_data %>%
+  ggplot(aes(x = RelationshipSatisfaction, fill = Attrition)) +  geom_bar() + ggtitle("Relationship Satisfaction by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Stock Option
+mod_data %>%
+  ggplot(aes(x = StockOptionLevel, fill = Attrition)) +  geom_bar() + ggtitle("Stock Option by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Total Working Years
+mod_data %>%
+  ggplot(aes(x = TotalWorkingYears, fill = Attrition)) +  geom_boxplot() + ggtitle("Total Working Years by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Training Total Last Year
+mod_data %>%
+  ggplot(aes(x = TrainingTimesLastYear, fill = Attrition)) +  geom_bar() + ggtitle("Training Total Last Year by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Work/Life Balance
+mod_data %>%
+  ggplot(aes(x = WorkLifeBalance, fill = Attrition)) +  geom_bar() + ggtitle("Work/Life Balance by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Years at Company
+mod_data %>%
+  ggplot(aes(x = YearsAtCompany, fill = Attrition)) +  geom_boxplot() + ggtitle("Years at Company by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Years in Current Role
+mod_data %>%
+  ggplot(aes(x = YearsInCurrentRole, fill = Attrition)) +  geom_boxplot() + ggtitle("Years in Current Role by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Years Since Last Promotion
+mod_data %>%
+  ggplot(aes(x = YearsSinceLastPromotion, fill = Attrition)) +  geom_boxplot() + ggtitle("Years Since Last Promotion by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+# Years With Current Manager
+mod_data %>%
+  ggplot(aes(x = YearsWithCurrManager, fill = Attrition)) +  geom_boxplot() + ggtitle("Years With Current Manager by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
+```
+
+Insights:
+
+- Age: over 75% of Employees that quit were under 40.
+- Hourly/Daily/Monthly Rate: No noticeable trends, when comparing rates and carrying them over to days and then months, the Attrition values do not equal each other.
+- Distance From Home: Attrition rate was higher for those employees who did not travel far for work.
+- Education: Attrition rate is highest among employees with lowest score.
+- Environment Satisfaction: Attrition rates are highest among employees with the lowest environment satisfaction score.
+- Job Involvement: Attrition rates are highest among employees with lowest job involvement.
+- Job Level: Attrition rates are highest in lowest job level, but rates follow same overall distribution.
+- Job Satisfaction: Attrition rates are highest among employees with low job satisfaction score.
+- Monthly Income: 75% of employees who quit had monthly incomes of 6000 or less.
+- Number of Companies Worked: Attrition rate was highest among employees who had only worked one job before, but that may be biased since a that subgroup is a strong majority.
+- Percent Salary Hike: Attrition rates were highest among employees with the lowest salary increases by percentage.
+- Performance Rating: Most employees had performance ratings of 3 so the increased attrition rate is expected.
+- Relationship Satisfaction: Attrition rates are highest among employees with low relationship satisfaction.
+- Stock Option: Employees with the lowest stock option plan, had the highest attrition rate.
+- Total Working Years: 75% of the employees that quit, had 10 or less working years.
+- Training Total Last Year: Attrition rates appear to follow same overall distribution for training times.
+- Work/Life Balance: Attrition rate is highest for employees with lowest Work/Life Balance.
+- Years at Company: Over 75% of the employees that quit, had been with the company for less than 9 years.
+- Years in Current Role: Over 75% of the employees that quit, had only been in their current role for less than 5 years.
+- Years Since Last Promotion: Over 75% of the employees that quit, had just been promoted in the last 3 years.
+- Years With Current Manager: Over 75% of the employees that quit, had worked with their last manager for 6 years or less.
+
+### Top 3 Factors
+```{r}
+# find strongest correlations with Attrition and plot correlation matrix
+corr_data1 = model.matrix(~0+., data=mod_data) %>% cor(use="pairwise.complete.obs")
+corr_data1 = as.data.frame(corr_data1)
+corr_data1 %>% filter(AttritionYes> .07) %>% ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=4, show.legend = TRUE, title = "Correlation Matrix")
+# overtime,job role (sales rep), marital status (single)
+```
+
+Insights: 
+
+
+### Job Specific Trends
+```{r}
+
+mod_data %>% select(JobRole,OverTime,MonthlyIncome,MaritalStatus,Attrition) %>% ggpairs(aes(color=JobRole))
+
+```
+
+Insights:
+
+### Other Interesting Trend
+```{r}
+
+
+```
