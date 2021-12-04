@@ -7,10 +7,10 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Introduction:
-In this presentation, we will be ...
+# Introduction
+In this analysis we will be reviewing and interpreting variables and characteristics of employee Attrition, or turn over. We will examine data with variables such as, wage, satisfaction poll scores, employee department, and so on. The objectives of the analysis will be to determine the 3 top factors contributing to Attrition, report on job role specific trends, identify other key insight, and finally, build prediction models for attrition and wage for employees that quit.
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, fig.width=6,fig.asp=0.618}
 knitr::opts_chunk$set(echo = TRUE)
 # Package Load-In
 rm(list = ls())
@@ -20,19 +20,22 @@ library(corrplot)
 library(ggplot2)
 library(caret)
 library(e1071)
+library(class)
 library(fpp)
 library(GGally)
 library(lsr)
 library(ggcorrplot)
+library(fastDummies)
+library(Metrics)
 ```
 
-### Data Load-In
+# Data Load-In
 ```{r}
-# Load original dataset.
+# Load original data set.
 orig_data <- as.data.frame(read_csv(url("https://raw.githubusercontent.com/alexanderlopez1793/CaseStudy2DDS/main/CaseStudy2-data.csv")))
 ```
 
-### Data Pre-Processing
+# Data Pre-Processing
 ```{r}
 # review data set
 str(orig_data)
@@ -63,7 +66,7 @@ mod_data = subset(mod_data, select = -c(StandardHours))
 mod_data = subset(mod_data, select = -c(Over18) )
 ```
 
-### EDA - Univariate Factor
+# EDA - Univariate Categorical
 ```{r}
 
 # review Categorical variables
@@ -77,7 +80,7 @@ mod_data %>% ggplot(aes(x=MaritalStatus)) + geom_bar(fill = "blue",col = "black"
 mod_data %>% ggplot(aes(x=OverTime)) + geom_bar(fill = "blue",col = "black") + labs(title="Overtime Bar Plot")+ geom_text(stat='count', aes(label=..count..), vjust=-.2)
 ```
 
-Insights: 
+## Insights: 
 
 - Attrition: Data is somewhat biased with a majority (84%) of employees showing "No" to Attrition (turnover).
 - Business Travel: Most employees (71%) rarely travel.
@@ -88,7 +91,7 @@ Insights:
 - Marital Status: There is almost a 50/50 split between "Married" and "Single"/"Divorced" employees ("Divorced" employees can be considered single as well).
 - Overtime: 71% of employees do not work overtime.
 
-### EDA - Univariate Numerical
+# EDA - Univariate Numerical
 ```{r}
 # review Numeric variables
 mod_data %>% ggplot(aes(x=Age)) + geom_histogram(binwidth=5,fill = "blue",col = "black")+ labs(title="Age Histogram Plot")
@@ -116,7 +119,7 @@ mod_data %>% ggplot(aes(x=YearsSinceLastPromotion)) + geom_histogram(binwidth=1,
 mod_data %>% ggplot(aes(x=YearsWithCurrManager)) + geom_histogram(binwidth=1,fill = "blue",col = "black")+ labs(title="Years With Current Manager Histogram Plot")
 ```
 
-Insights: 
+## Insights: 
 
 - Age: Employee age has approx. normally distribution.
 - Hourly/Daily/Monthly Rate: There is no obvious statistical distribution.
@@ -140,7 +143,7 @@ Insights:
 - Years Since Last Promotion: There is a right skew, may have strong correlation to years in current role.
 - Years With Current Manager: Some what right skew, could also be bi-modal. Distribution looks very similar to years in current role.
 
-### EDA - Bivariate Factor
+# EDA - Bivariate Categorical
 ```{r}
 #business travel
 mod_data %>%
@@ -179,7 +182,7 @@ mod_data %>%
   ggplot(aes(x = OverTime, y = attrition_rate))+ geom_bar(stat = 'identity',fill = "blue") + ggtitle("Attrition Rate - OverTime") + theme(plot.title = element_text(size =15),axis.text.x = element_text(size =10)) + geom_text(aes(label=attrition_rate), size = 5, position=position_dodge(width=0.2), vjust=-0.25)+ scale_y_continuous(limits = c(0, 50))
 ```
 
-Insights:
+## Insights:
 
 - Business Travel: Highest rate of Attrition is for employees who travel often.
 - Department: Highest rate of Attrition is for employees who work in sales.
@@ -189,7 +192,7 @@ Insights:
 - Marital Status: Attrition rate is over 25% for single employees.
 - Overtime: Attrition rate for employees that work overtime is over 30%.
 
-### EDA - Bivariate Numeric
+# EDA - Bivariate Numeric
 ```{r}
 # Age
 mod_data %>%
@@ -262,7 +265,7 @@ mod_data %>%
   ggplot(aes(x = YearsWithCurrManager, fill = Attrition)) +  geom_boxplot() + ggtitle("Years With Current Manager by Attrition") + theme(plot.title = element_text(size =10),axis.text.x = element_text(size =10))
 ```
 
-Insights:
+## Insights:
 
 - Age: over 75% of Employees that quit were under 40.
 - Hourly/Daily/Monthly Rate: No noticeable trends, when comparing rates and carrying them over to days and then months, the Attrition values do not equal each other.
@@ -286,7 +289,7 @@ Insights:
 - Years Since Last Promotion: Over 75% of the employees that quit, had just been promoted in the last 3 years.
 - Years With Current Manager: Over 75% of the employees that quit, had worked with their last manager for 6 years or less.
 
-### Top 3 Factors
+# Top 3 Factors
 ```{r}
 # find strongest correlations with Attrition and plot correlation matrix
 corr_data1 = model.matrix(~0+., data=mod_data) %>% cor(use="pairwise.complete.obs")
@@ -295,20 +298,149 @@ corr_data1 %>% filter(AttritionYes> .07) %>% ggcorrplot(show.diag = F, type="low
 # overtime,job role (sales rep), marital status (single)
 ```
 
-Insights: 
+## Insights: 
+
+The Top 3 Factors for Attrition are listed below:
+
+- Overtime (Corr = 0.27): Whether or not an employee works overtime has the highest correlation to Attrition. Overtime is work outside of the standard 40 hour work week. Being over worked as an employee can certainly lead to distraught feelings and eventually, voluntary turnover. 
+- Job Role, Sales Representative (Corr = 0.20): Job Role, more specifically, Sales Representative has the second highest correlation to Attrition. Looking at the bi-variate analysis, sales rep employees had the highest attrition rate at 45%. This percentage is amplified when considering sales reps make up only 6% of the total employee population. 
+- Marital Status, Single (Corr = 0.18): Single Employees had the third highest correlation to Attrition. One thought process can be, employees with no family are more inclined to take risks, such as quitting to become entrepreneurs or moving to another company.
 
 
-### Job Specific Trends
+# Job Specific Trends
 ```{r}
+# using ggpairs and group_by tables to review job specific trends
 
-mod_data %>% select(JobRole,OverTime,MonthlyIncome,MaritalStatus,Attrition) %>% ggpairs(aes(color=JobRole))
+# initial review of numeric variables of interest
+mod_data %>% select(JobRole,MonthlyIncome,PercentSalaryHike) %>% ggpairs(legend=1,aes(color=JobRole))
+
+mod_data %>% group_by(JobRole) %>% summarise(meanMI = mean(MonthlyIncome),count=n())
+mod_data %>% group_by(JobRole) %>% summarise(meanPSH = mean(PercentSalaryHike),count=n())
+
+# initial review of categorical variables of interest
+mod_data %>% select(JobRole,EnvironmentSatisfaction,JobSatisfaction,MonthlyIncome) %>% ggpairs(legend=1,aes(color=JobRole))
+
+mod_data %>% select(JobRole,MaritalStatus,OverTime) %>% ggpairs(legend=1,aes(color=JobRole))
+mod_data %>% select(JobRole,Education,MonthlyIncome,OverTime) %>% ggpairs(legend=1,aes(color=JobRole))
+
+
+mod_data %>% group_by(JobRole) %>% 
+  summarise(meanYAC = mean(YearsAtCompany),
+            meanES=mean(EnvironmentSatisfaction),
+            meanJS=mean(JobSatisfaction),
+            meanMI = mean(MonthlyIncome),
+            meanE = mean(Education),
+            meanDFH = mean(DistanceFromHome),
+            meanRS = mean(RelationshipSatisfaction),
+            count=n())
+```
+
+## Insights:
+
+- Sales Representatives have the lowest mean monthly income (2653), lowest mean education level (2.45) and are the least experienced employees with a mean of 2.9 years with the company.
+- Mangers and Research Directors have the highest mean monthly incomes (17197 and 15750 respectively) and are the most experienced employees with 13.8 and 10.2 years with the company.
+- Healthcare Representatives have the highest mean job satisfaction score (2.83), even with the highest mean distance from home (9.8).
+
+# Other Interesting Trends
+```{r}
+# trends and other insights using visuals
+
+mod_data %>% 
+  filter(Attrition == "Yes") %>%
+  select(JobRole,OverTime,MaritalStatus) %>% 
+  ggpairs(legend=1,aes(color=JobRole))
+
+mod_data %>% 
+  ggplot(aes(y=MonthlyIncome,x=as.factor(JobSatisfaction),fill=Attrition)) + geom_boxplot() + labs(title = "Attrition by Job Satisfaction vs Monthly Income",y="Monthly Income",x="Job Satisfaction") + theme(plot.title = element_text(size =20),axis.text.x = element_text(size =9)) + facet_wrap(~JobRole)
 
 ```
 
-Insights:
+## Insights
 
-### Other Interesting Trend
+- In general, jobs with higher wages tend to have better employee retention. In this case, job satisfaction did not appear have significant impact on attrition - Managers and Directors saw very little attrition regardless of satisfaction score. Overall, this plot provides evidence that if the company wants to decrease attrition, the best course of action will likely be to increase wages.
+
+# Classifcation Model
 ```{r}
+# set seed for repeatability
+set.seed(1)
+# create dummy variables for factor variables
+dum_data = dummy_cols(mod_data,select_columns = c('BusinessTravel','Department','EducationField','Gender','JobRole','MaritalStatus','OverTime'),remove_selected_columns = TRUE)
 
+# scale all original numeric variables with large ranges
+# dum_data$Age = as.numeric(scale(dum_data$Age))
+# dum_data$DailyRate = as.numeric(scale(dum_data$DailyRate))
+# dum_data$DistanceFromHome = as.numeric(scale(dum_data$DistanceFromHome))
+# dum_data$HourlyRate = as.numeric(scale(dum_data$HourlyRate))
+# dum_data$MonthlyIncome = as.numeric(scale(dum_data$MonthlyIncome))
+# dum_data$MonthlyRate = as.numeric(scale(dum_data$MonthlyRate))
+# dum_data$NumCompaniesWorked = as.numeric(scale(dum_data$NumCompaniesWorked))
+# dum_data$PercentSalaryHike = as.numeric(scale(dum_data$PercentSalaryHike))
+# dum_data$TotalWorkingYears = as.numeric(scale(dum_data$TotalWorkingYears))
+# dum_data$TrainingTimesLastYear = as.numeric(scale(dum_data$TrainingTimesLastYear))
+# dum_data$YearsAtCompany = as.numeric(scale(dum_data$YearsAtCompany))
+# dum_data$YearsInCurrentRole = as.numeric(scale(dum_data$YearsInCurrentRole))
+# dum_data$YearsSinceLastPromotion = as.numeric(scale(dum_data$YearsSinceLastPromotion))
+# dum_data$YearsWithCurrManager = as.numeric(scale(dum_data$YearsWithCurrManager))
+
+# create train and test sets
+trainInd = sample(seq(1,870,1), .7*870)
+train = dum_data[trainInd,]
+test = dum_data[-trainInd,]
+
+# will use knn classifier for attrition classification model
+classifications = knn(train[,c(1,3:52)],test[,c(1,3:52)],train$Attrition,prob = TRUE, k = 3)
+confusionMatrix(table(classifications,test$Attrition))
+
+# trying naive bayes
+model = naiveBayes(train[,c(1,3:52)],train$Attrition,laplace = 1)
+table(predict(model,test[,c(1,3:52)]),test$Attrition)
+CM = confusionMatrix(table(predict(model,test[,c(1,3:52)]),test$Attrition))
+CM
 
 ```
+
+## Insights:
+
+- KNN Model Results: 
+  - Accuracy = 78%
+  - Sensitivity = 91%
+  - Specificity = 7%
+- Naive Bayes Model Results: 
+  - Accuracy = 72%
+  - Sensitivity = 70%
+  - Specificity = 83%
+- Naive Bayes model provided required metric scores and so can be used as our Attrition classification model.
+
+# Regression Model
+```{r}
+# training/test sets have already been created
+# creating model - linear regression
+model2 = lm(MonthlyIncome ~ Age + YearsAtCompany + JobLevel, data=train)
+summary(model2)
+
+# predictions
+model2_preds = predict(model2,newdata = test)
+#as.data.frame(model2_preds)
+
+# using rmse function, RMSE= 1372.05
+rmse(test$MonthlyIncome,model2_preds)
+
+# creating another model - linear regression w/ years at company removed due to high p-value
+model3 = lm(MonthlyIncome ~ Age + JobLevel, data=train)
+summary(model3)
+
+# predictions
+model3_preds = predict(model3,newdata = test)
+#as.data.frame(model3_preds)
+
+# using rmse function, RMSE= 1372.05
+rmse(test$MonthlyIncome,model3_preds)
+
+```
+
+## Insights:
+
+- Linear Regression model yields RMSE = 1372.05. Variables to considered were selected after reviewing data during EDA. Job Level seems to hold the most significance when predicting monthly income (p-value = <2e-16).
+
+# Conclusion
+In conclusion, the top 3 factors for attrition were identified to be over time work, job role (sales rep), and marital status (single). Further analysis and interpretation was also provided for specific job roles like sales rep and managers. Insight on attrition reduction was also provied. Finally, 2 models that meet the given criteria were identified. For attrition classification, the Naive Bayes will provide metric scores over 70% and for a monthly income prediction, the linear regression model will provide an RMSE less than $1375.
