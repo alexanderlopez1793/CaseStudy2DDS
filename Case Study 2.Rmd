@@ -324,6 +324,8 @@ mod_data %>% select(JobRole,EnvironmentSatisfaction,JobSatisfaction,MonthlyIncom
 mod_data %>% select(JobRole,MaritalStatus,OverTime) %>% ggpairs(legend=1,aes(color=JobRole))
 mod_data %>% select(JobRole,Education,MonthlyIncome,OverTime) %>% ggpairs(legend=1,aes(color=JobRole))
 
+mod_data %>% select(JobRole,Education,MonthlyIncome) %>% ggpairs(legend=1,aes(color=JobRole))
+mod_data %>% select(JobRole,JobSatisfaction,DistanceFromHome) %>% ggpairs(legend=1,aes(color=JobRole))
 
 mod_data %>% group_by(JobRole) %>% 
   summarise(meanYAC = mean(YearsAtCompany),
@@ -441,7 +443,7 @@ rmse(test$MonthlyIncome,model3_preds)
 
 ## Insights:
 
-- Linear Regression model yields RMSE = 1372.05. Variables to considered were selected after reviewing data during EDA. Job Level seems to hold the most significance when predicting monthly income (p-value = <2e-16).
+- Linear Regression model yields RMSE = 1372.05. Variables considered were selected after reviewing data during EDA. Job Level seems to hold the most significance when predicting monthly income (p-value = <2e-16).
 
 # Conclusion
 In conclusion, the top 3 factors for attrition were identified to be over time work, job role (sales rep), and marital status (single). Further analysis and interpretation was also provided for specific job roles like sales rep and managers. Insight on attrition reduction was also provied. Finally, 2 models that meet the given criteria were identified. For attrition classification, the Naive Bayes will provide metric scores over 70% and for a monthly income prediction, the linear regression model will provide an RMSE less than $1375.
