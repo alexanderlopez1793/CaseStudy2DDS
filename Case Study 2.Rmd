@@ -6,6 +6,7 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+# YouTube Presentation Link:
 
 # Introduction
 In this analysis we will be reviewing and interpreting variables and characteristics of employee Attrition, or turn over. We will examine data with variables such as, wage, satisfaction poll scores, employee department, and so on. The objectives of the analysis will be to determine the 3 top factors contributing to Attrition, report on job role specific trends, identify other key insight, and finally, build prediction models for attrition and wage for employees that quit.
