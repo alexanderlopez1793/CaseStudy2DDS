@@ -439,6 +439,9 @@ model3_preds = predict(model3,newdata = test)
 # using rmse function, RMSE= 1372.05
 rmse(test$MonthlyIncome,model3_preds)
 
+# plot for presentation
+mod_data %>% ggplot(aes(x=Age,y=MonthlyIncome,color=as.factor(JobLevel))) + geom_point() + labs(title = "Age vs Monthly Income per Job Level",y="Monthly Income",x="Age",color="Job Level") + theme(plot.title = element_text(size =20),axis.text.x = element_text(size =9))
+
 ```
 
 ## Insights:
